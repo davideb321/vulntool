@@ -1,0 +1,19 @@
+# setuptools' default sdist sweep picks up test files by the name pattern
+# `test*.py`, which silently leaves out tests/conftest.py. Three test modules
+# import from it, so without this the unpacked sdist dies at collection with
+# `ModuleNotFoundError: No module named 'conftest'` and *no* test runs at all —
+# not even the ones with no capsule dependency.
+recursive-include tests *.py
+
+# The machine-readable citation belongs with the distributed source, not only in
+# the git repo. tests/test_citation.py skips cleanly if it is ever absent, so
+# losing this line costs coverage without failing anything — the `sdist` CI job
+# checks for the file explicitly for that reason.
+include CITATION.cff
+
+# Testing a change here: build in a CLEAN tree (a fresh clone, or delete
+# src/vulntool.egg-info first). setuptools reuses the previous build's
+# egg-info/SOURCES.txt as its file list, so a rebuild in a tree that has already
+# been built once will happily ship files this manifest no longer names, and a
+# broken manifest looks fine. The CI job is immune (the runner checks out fresh);
+# a local rehearsal is not.

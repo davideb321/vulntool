@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: pytest (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          # [gui] too, so the Streamlit app is actually executed in CI: a broken
+          # app still serves HTTP 200, so only running the script catches it.
+          python -m pip install '.[dev,plot,gui]'
+
+      - name: Run tests
+        # The golden tests compare against the paper's own R output and need the
+        # reproducibility capsule's raw census data. That data is third-party and
+        # separately licensed (Michigan is CC BY-NC 4.0), so it is not vendored
+        # here and those tests skip in CI. -rs makes the skips visible in the log
+        # rather than silent, so a skip can never be mistaken for a pass.
+        run: pytest -q -rs
+
+  clean-install:
+    name: clean install + CLI smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the built package (not editable)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+
+      - name: Import and run the CLI from outside the source tree
+        run: |
+          cd "$RUNNER_TEMP"
+          python -c "import vulntool; print(vulntool.__version__)"
+          vulnerability --help
+          vulnerability fit "$GITHUB_WORKSPACE/examples/example_data.csv" -o out.csv
+          head -3 out.csv
+
+  sdist:
+    # The other two jobs cannot see this failure mode. `test` runs against a git
+    # checkout, where every file is present because it is a clone; `clean-install`
+    # installs a wheel, and the wheel carries no tests. So neither ever opens an
+    # sdist, and the source tarball can ship broken while both stay green — which
+    # is exactly what happened: setuptools' default sweep matches test files by the
+    # name pattern `test*.py` and so left out tests/conftest.py, three modules
+    # import from it, and a collection ImportError aborts the whole pytest session.
+    # The shipped tarball ran *zero* tests. MANIFEST.in fixes it; this job is what
+    # keeps it fixed.
+    name: sdist ships a working test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the sdist
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --sdist --outdir dist
+
+      - name: Unpack it
+        run: |
+          cd dist
+          tar xzf vulntool-*.tar.gz
+          # Fail here rather than 200 lines into a pytest log: a missing conftest
+          # shows up as ModuleNotFoundError at collection, which reads like a
+          # broken test rather than a broken package.
+          test -f vulntool-*/tests/conftest.py \
+            || { echo "::error::tests/conftest.py is missing from the sdist -- check MANIFEST.in"; exit 1; }
+          # Checked separately because its absence is *silent*: test_citation.py
+          # skips when CITATION.cff is not there, by design, so dropping the
+          # `include` line from MANIFEST.in would quietly retire those tests
+          # instead of failing anything.
+          test -f vulntool-*/CITATION.cff \
+            || { echo "::error::CITATION.cff is missing from the sdist -- check MANIFEST.in"; exit 1; }
+
+      - name: Install and test the unpacked tarball, not the repo
+        # Running inside the unpacked directory is the whole point: pytest must see
+        # only what was actually shipped. Running from the repo root would pass no
+        # matter what the tarball contains.
+        env:
+          # Set explicitly, not left unset. conftest._find_capsule() falls back to
+          # probing sibling directories when this is empty, so an unset variable
+          # does not reliably mean "no capsule data". An explicit path is taken at
+          # its word and the probe is skipped, so the golden tests skip predictably.
+          VULNTOOL_CAPSULE_DATA: /nonexistent
+        run: |
+          cd dist/vulntool-*/
+          python -m pip install '.[dev,plot,gui]'
+          # -rs prints the skip reasons, so a skip can never be read as a pass.
+          pytest -q -rs

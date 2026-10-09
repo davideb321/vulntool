@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vulntool"
+version = "0.3.2"
+description = "Compute spatial-buffering vulnerability (W_alpha) of forest species from a single census snapshot"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Davide Bernardi" }]
+keywords = ["ecology", "forest", "vulnerability", "spatial", "abundance"]
+dependencies = [
+    "numpy>=1.21",
+    "scipy>=1.7",
+    "pandas>=1.3",
+]
+
+[project.optional-dependencies]
+plot = ["matplotlib>=3.4"]
+# >=1.49 for st.dataframe(width=...) and a settable file_uploader in
+# streamlit.testing.v1.AppTest, which is how the GUI flow is tested.
+gui = ["streamlit>=1.49", "matplotlib>=3.4"]
+dev = ["pytest>=7.0", "matplotlib>=3.4"]
+
+[project.scripts]
+vulnerability = "vulntool.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.csv"]

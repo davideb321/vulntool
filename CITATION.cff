@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software in work you publish, please cite the paper it
+  implements.
+title: "vulntool"
+abstract: >-
+  Measures how exposed each species in a forest census is to local extinction,
+  accounting for the buffering effect of a patchy spatial distribution.
+type: software
+license: MIT
+repository-code: "https://github.com/davideb321/vulntool"
+authors:
+  - given-names: Davide
+    family-names: Bernardi
+    email: davide.bernardi@unipd.it
+preferred-citation:
+  type: article
+  title: "Dispersal diversity buffers species vulnerability to local extinction"
+  year: 2026
+  journal: "Nature Ecology & Evolution"
+  doi: "10.1038/s41559-026-03195-y"
+  url: "https://www.nature.com/articles/s41559-026-03195-y"
+  authors:
+    - given-names: Davide
+      family-names: Bernardi
+    - given-names: Giorgio
+      family-names: Nicoletti
+    - given-names: Prajwal
+      family-names: Padmanabha
+    - given-names: Samir
+      family-names: Suweis
+    - given-names: Sandro
+      family-names: Azaele
+    - given-names: Simon A.
+      family-names: Levin
+    - given-names: Andrea
+      family-names: Rinaldo
+    - given-names: Amos
+      family-names: Maritan

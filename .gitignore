@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Test / tooling
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Local outputs
+*.png
+!examples/*.png
+results*.csv
+
+# Third-party census data must never be committed here: this repo is MIT, and
+# real forest censuses are not ours to relicense. Everything the docs and
+# tests need is generated instead; see dev/simulate_demo_data.py.
+examples/*census_cortag_gxy.csv
+
+# The demo-data generator: only its output (examples/demo_census.csv and
+# src/vulntool/demo_census.csv) is part of the package. Kept locally, not in
+# git, so it does not distract from the tool itself.
+/dev/
